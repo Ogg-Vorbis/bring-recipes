@@ -28,3 +28,21 @@ li { margin: 8px 0; }
 }
 a { color: #244a2e; }
 .back { display: inline-block; margin-bottom: 18px; }
+.recipe-list {
+  margin: 20px 0 0;
+  padding-left: 22px;
+}
+.recipe-list > li {
+  margin: 18px 0;
+}
+.recipe-list a {
+  font-size: 1.08rem;
+  font-weight: 700;
+}
+.recipe-description {
+  margin: 4px 0 0;
+  color: #5c6657;
+}
+.load-error {
+  color: #8a241f;
+}

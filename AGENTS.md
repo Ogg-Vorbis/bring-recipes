@@ -24,7 +24,7 @@ This repository is a flat, phone-friendly GitHub Pages recipe site.
    `<script async="async" src="https://platform.getbring.com/widgets/import.js"></script>`
    and:
    `<div data-bring-import="" style="display:none"></div>`
-10. Add the new recipe link to `index.html`.
+10. Do not edit `index.html`; it discovers root-level recipe HTML files automatically.
 11. Reuse `styles.css`; do not create another stylesheet.
 12. Validate that every visible ingredient and instruction matches the JSON-LD.
 13. Commit and push the completed change.

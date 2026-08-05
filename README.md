@@ -24,7 +24,15 @@ First recipe:
 
 ## Files
 
-- `index.html` — recipe listing
+- `index.html` — automatic recipe listing; it discovers root-level `.html` recipe files through the public GitHub API
 - `qualinesti-vegetable-stew.html` — first recipe
 - `styles.css` — shared design
 - `AGENTS.md` — persistent Codex instructions
+
+
+## Adding recipes
+
+Upload a new lowercase, hyphenated recipe HTML file to the repository root and commit it.
+The index discovers it automatically; no manual index edit is required. The recipe page
+should contain Schema.org `Recipe` JSON-LD so the index can display its name and
+description.

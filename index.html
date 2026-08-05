@@ -11,11 +11,123 @@
   <main>
     <div class="card">
       <h1>Recipes</h1>
-      <ul class="recipe-list">
-        <li><a href="qualinesti-vegetable-stew.html">Qualinesti Vegetable Stew</a></li>
-        <li><a href="butter-chicken-and-garlic-butter-naan.html">Butter Chicken and Garlic Butter Naan</a></li>
-      </ul>
+      <p class="meta">Recipe pages are discovered automatically from HTML files in this repository.</p>
+      <p id="recipe-status" class="meta" role="status">Loading recipes…</p>
+      <ul id="recipe-list" class="recipe-list" hidden></ul>
+      <noscript>
+        <p class="note">JavaScript is required to build the automatic recipe list.</p>
+      </noscript>
     </div>
   </main>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const list = document.getElementById("recipe-list");
+      const status = document.getElementById("recipe-status");
+
+      function repositoryDetails() {
+        const hostParts = window.location.hostname.split(".");
+        const pathParts = window.location.pathname.split("/").filter(Boolean);
+
+        if (hostParts.length >= 3 && hostParts.slice(-2).join(".") === "github.io") {
+          return {
+            owner: hostParts[0],
+            repo: pathParts[0] || `${hostParts[0]}.github.io`
+          };
+        }
+
+        return { owner: "Ogg-Vorbis", repo: "bring-recipes" };
+      }
+
+      function recipeMetadata(html, filename) {
+        const documentCopy = new DOMParser().parseFromString(html, "text/html");
+        const jsonLdScripts = documentCopy.querySelectorAll('script[type="application/ld+json"]');
+        let recipe = null;
+
+        for (const script of jsonLdScripts) {
+          try {
+            const data = JSON.parse(script.textContent);
+            const candidates = Array.isArray(data) ? data : [data];
+            recipe = candidates.find(item => item && item["@type"] === "Recipe");
+            if (recipe) break;
+          } catch (error) {
+            console.warn(`Could not parse JSON-LD in ${filename}`, error);
+          }
+        }
+
+        const fallbackTitle = documentCopy.querySelector("h1")?.textContent.trim()
+          || documentCopy.title
+          || filename.replace(/\.html$/i, "").replace(/-/g, " ");
+
+        return {
+          filename,
+          name: recipe?.name || fallbackTitle,
+          description: recipe?.description || ""
+        };
+      }
+
+      function render(recipes) {
+        recipes.sort((a, b) => a.name.localeCompare(b.name));
+        list.replaceChildren();
+
+        for (const recipe of recipes) {
+          const item = document.createElement("li");
+          const link = document.createElement("a");
+          link.href = recipe.filename;
+          link.textContent = recipe.name;
+          item.appendChild(link);
+
+          if (recipe.description) {
+            const description = document.createElement("p");
+            description.className = "recipe-description";
+            description.textContent = recipe.description;
+            item.appendChild(description);
+          }
+
+          list.appendChild(item);
+        }
+
+        status.textContent = recipes.length
+          ? `${recipes.length} recipe${recipes.length === 1 ? "" : "s"}`
+          : "No recipe HTML files found.";
+        list.hidden = recipes.length === 0;
+      }
+
+      async function loadRecipes() {
+        const { owner, repo } = repositoryDetails();
+        const apiUrl = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/`;
+        const response = await fetch(apiUrl, {
+          headers: { Accept: "application/vnd.github+json" }
+        });
+
+        if (!response.ok) {
+          throw new Error(`GitHub returned ${response.status}`);
+        }
+
+        const files = await response.json();
+        const recipeFiles = files
+          .filter(file => file.type === "file")
+          .map(file => file.name)
+          .filter(name => name.toLowerCase().endsWith(".html"))
+          .filter(name => name.toLowerCase() !== "index.html");
+
+        const recipes = await Promise.all(recipeFiles.map(async filename => {
+          const recipeResponse = await fetch(filename, { cache: "no-cache" });
+          if (!recipeResponse.ok) throw new Error(`Could not load ${filename}`);
+          return recipeMetadata(await recipeResponse.text(), filename);
+        }));
+
+        render(recipes);
+      }
+
+      loadRecipes().catch(error => {
+        console.error(error);
+        status.textContent = "The recipe list could not be loaded. Refresh the page or open a recipe directly.";
+        status.classList.add("load-error");
+      });
+    })();
+  </script>
 </body>
 </html>
